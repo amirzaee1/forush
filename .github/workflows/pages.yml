@@ -1,0 +1,33 @@
+name: Publish Forush
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover original media from immutable source
+        run: |
+          git init /tmp/original
+          git -C /tmp/original remote add origin https://github.com/amirzaee1/moshavere.git
+          git -C /tmp/original fetch --depth=1 origin 359d5fd3509c10b8036b209807e1f277c2093bca
+          git -C /tmp/original archive FETCH_HEAD docs/assets docs/fonts | tar -x
+          test -s docs/assets/film.mp4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - uses: actions/deploy-pages@v4
+        id: deployment
